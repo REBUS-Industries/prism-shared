@@ -1,0 +1,1 @@
+ALTER TABLE "materials" ADD COLUMN "parameters" jsonb DEFAULT '{}'::jsonb NOT NULL;
