@@ -6,7 +6,7 @@
  * src/db/migrations/. Never hand-edit DDL.
  */
 import {
-  pgTable, text, varchar, integer, bigint, boolean, timestamp, uuid, jsonb, index, primaryKey, real,
+  pgTable, text, varchar, integer, bigint, boolean, timestamp, uuid, jsonb, index, uniqueIndex, primaryKey, real,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -457,6 +457,84 @@ export const materialTextures = pgTable('material_textures', {
 }));
 
 // ---------------------------------------------------------------------------
+// Fixture library — GDTF-derived types, media assets, MVR instances
+// ---------------------------------------------------------------------------
+
+export const fixtureTypes = pgTable('fixture_types', {
+  id:               uuid('id').primaryKey().defaultRandom(),
+  name:             varchar('name', { length: 256 }).notNull(),
+  manufacturer:     varchar('manufacturer', { length: 256 }).notNull().default(''),
+  fixtureName:      varchar('fixture_name', { length: 256 }).notNull().default(''),
+  revision:         varchar('revision', { length: 128 }),
+  tags:             text('tags').array().notNull().default(sql`'{}'::text[]`),
+  status:           varchar('status', { length: 32 }).notNull().default('draft'),
+  sourceGdtfId:     varchar('source_gdtf_id', { length: 256 }),
+  sourceGdtfHash:   varchar('source_gdtf_hash', { length: 64 }),
+  definition:       jsonb('definition').notNull().default(sql`'{}'::jsonb`),
+  previewModelId:   uuid('preview_model_id'),
+  createdByAdminId:   uuid('created_by_admin_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+  createdByApiKeyId:  uuid('created_by_api_key_id').references(() => apiKeys.id, { onDelete: 'set null' }),
+  createdAt:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:        timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt:        timestamp('deleted_at', { withTimezone: true }),
+}, (t) => ({
+  byCreatedAt:    index('fixture_types_created_at_idx').on(t.createdAt),
+  byManufacturer: index('fixture_types_manufacturer_idx').on(t.manufacturer),
+  byGdtfHash:     index('fixture_types_gdtf_hash_idx').on(t.sourceGdtfHash),
+}));
+
+export const fixtureMedia = pgTable('fixture_media', {
+  id:               uuid('id').primaryKey().defaultRandom(),
+  mediaType:        varchar('media_type', { length: 64 }).notNull(),
+  contentHash:      varchar('content_hash', { length: 64 }).notNull(),
+  originalFilename: varchar('original_filename', { length: 256 }).notNull(),
+  contentType:      varchar('content_type', { length: 128 }).notNull(),
+  sizeBytes:        bigint('size_bytes', { mode: 'number' }).notNull(),
+  storagePath:      varchar('storage_path', { length: 512 }).notNull(),
+  fixtureTypeId:    uuid('fixture_type_id').references(() => fixtureTypes.id, { onDelete: 'set null' }),
+  metadata:         jsonb('metadata').notNull().default(sql`'{}'::jsonb`),
+  createdAt:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt:        timestamp('deleted_at', { withTimezone: true }),
+}, (t) => ({
+  byHash:         index('fixture_media_hash_idx').on(t.contentHash),
+  byFixtureType:  index('fixture_media_fixture_type_idx').on(t.fixtureTypeId),
+}));
+
+export const gdtfCache = pgTable('gdtf_cache', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  manufacturer:   varchar('manufacturer', { length: 256 }).notNull(),
+  fixtureName:    varchar('fixture_name', { length: 256 }).notNull(),
+  revision:       varchar('revision', { length: 128 }),
+  modeNames:      text('mode_names').array().notNull().default(sql`'{}'::text[]`),
+  gdtfHash:       varchar('gdtf_hash', { length: 64 }).notNull(),
+  source:         varchar('source', { length: 64 }).notNull().default('gdtf-share'),
+  localPath:      varchar('local_path', { length: 512 }).notNull(),
+  fixtureTypeId:  uuid('fixture_type_id').references(() => fixtureTypes.id, { onDelete: 'set null' }),
+  dateImported:   timestamp('date_imported', { withTimezone: true }).notNull().defaultNow(),
+  lastChecked:    timestamp('last_checked', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byHash: uniqueIndex('gdtf_cache_hash_uidx').on(t.gdtfHash),
+}));
+
+export const fixtureInstances = pgTable('fixture_instances', {
+  id:              uuid('id').primaryKey().defaultRandom(),
+  projectId:       text('project_id'),
+  orbitProjectId:  text('orbit_project_id'),
+  orbitModelId:    text('orbit_model_id'),
+  fixtureTypeId:   uuid('fixture_type_id').notNull().references(() => fixtureTypes.id, { onDelete: 'restrict' }),
+  source:          varchar('source', { length: 32 }).notNull().default('MVR'),
+  sourceMvrUuid:   varchar('source_mvr_uuid', { length: 256 }),
+  instanceData:    jsonb('instance_data').notNull().default(sql`'{}'::jsonb`),
+  status:          varchar('status', { length: 32 }).notNull().default('pending'),
+  warnings:        text('warnings').array().notNull().default(sql`'{}'::text[]`),
+  createdAt:       timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt:       timestamp('deleted_at', { withTimezone: true }),
+}, (t) => ({
+  byProject: index('fixture_instances_project_idx').on(t.projectId),
+  byType:    index('fixture_instances_type_idx').on(t.fixtureTypeId),
+}));
+
+// ---------------------------------------------------------------------------
 // Webhook endpoints — admin-configured callback targets
 // ---------------------------------------------------------------------------
 
@@ -497,3 +575,11 @@ export type Material         = typeof materials.$inferSelect;
 export type NewMaterial      = typeof materials.$inferInsert;
 export type MaterialTexture    = typeof materialTextures.$inferSelect;
 export type NewMaterialTexture = typeof materialTextures.$inferInsert;
+export type FixtureType        = typeof fixtureTypes.$inferSelect;
+export type NewFixtureType     = typeof fixtureTypes.$inferInsert;
+export type FixtureMedia       = typeof fixtureMedia.$inferSelect;
+export type NewFixtureMedia      = typeof fixtureMedia.$inferInsert;
+export type GdtfCache          = typeof gdtfCache.$inferSelect;
+export type NewGdtfCache       = typeof gdtfCache.$inferInsert;
+export type FixtureInstanceRow    = typeof fixtureInstances.$inferSelect;
+export type NewFixtureInstanceRow = typeof fixtureInstances.$inferInsert;

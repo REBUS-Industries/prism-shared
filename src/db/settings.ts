@@ -38,7 +38,10 @@ export type SettingKey =
   // Missing pipelines / nodes fall back to the auto-layout in
   // FlowEditor.vue. Cleared per-pipeline when the user clicks "Reset
   // layout"; cleared globally if the value fails to parse.
-  | 'pipeline_layout_v1';
+  | 'pipeline_layout_v1'
+  // GDTF-Share.com API credentials for fixture library import (admin Settings).
+  | 'gdtf_share_username'
+  | 'gdtf_share_password';
 
 /**
  * Legacy keys that are still read from the DB as a fallback by older code

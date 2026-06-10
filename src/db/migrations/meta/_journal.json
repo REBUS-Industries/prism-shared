@@ -85,6 +85,13 @@
       "when": 1781020551141,
       "tag": "0011_material_parameters",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1781100000000,
+      "tag": "0012_fixtures_store",
+      "breakpoints": true
     }
   ]
 }

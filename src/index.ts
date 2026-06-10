@@ -6,9 +6,7 @@ export * from './auth/middleware.js';
 export * from './auth/principal.js';
 export * from './auth/provenance.js';
 // DB
-export * from './db/client.js';
-export * from './db/schema.js';
-export * from './db/settings.js';
+export * from './db/index.js';
 // WS
 export * from './ws/redisRegistry.js';
 export * from './ws/sessionRegistry.js';
@@ -17,11 +15,12 @@ export * from './ws/signallingProxyRegistry.js';
 // Jobs
 export * from './jobs/redis.js';
 // Orbit
-export * from './orbit/client.js';
+export * from './orbit/index.js';
 // Visualiser
 export * from './visualiser/runRegistry.js';
 export * from './visualiser/runLog.js';
 // Contracts
 export * from './contracts/agent-protocol.js';
+export * from './contracts/fixtures.js';
 // Bootstrap
 export { runBootstrap } from './bootstrap.js';

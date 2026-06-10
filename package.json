@@ -1,6 +1,6 @@
 {
   "name": "@rebus-industries/prism-shared",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared modules for PRISM microservices: auth, db, WS registry, Redis, ORBIT client",
   "type": "module",
   "main": "./dist/index.js",
