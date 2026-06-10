@@ -16,7 +16,12 @@ async function main() {
   await pool.end();
 }
 
-main().catch((err) => {
-  console.error('[migrate] failed:', err);
-  process.exit(1);
-});
+import { fileURLToPath } from 'node:url';
+
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  main().catch((err) => {
+    console.error('[migrate] failed:', err);
+    process.exit(1);
+  });
+}
