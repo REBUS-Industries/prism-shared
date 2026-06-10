@@ -470,6 +470,9 @@ export const fixtureTypes = pgTable('fixture_types', {
   status:           varchar('status', { length: 32 }).notNull().default('draft'),
   sourceGdtfId:     varchar('source_gdtf_id', { length: 256 }),
   sourceGdtfHash:   varchar('source_gdtf_hash', { length: 64 }),
+  gdtfShareUuid:    varchar('gdtf_share_uuid', { length: 128 }),
+  activeVersionId:  uuid('active_version_id'),
+  importSource:     varchar('import_source', { length: 64 }).notNull().default('upload'),
   definition:       jsonb('definition').notNull().default(sql`'{}'::jsonb`),
   previewModelId:   uuid('preview_model_id'),
   createdByAdminId:   uuid('created_by_admin_id').references(() => adminUsers.id, { onDelete: 'set null' }),
@@ -478,9 +481,10 @@ export const fixtureTypes = pgTable('fixture_types', {
   updatedAt:        timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   deletedAt:        timestamp('deleted_at', { withTimezone: true }),
 }, (t) => ({
-  byCreatedAt:    index('fixture_types_created_at_idx').on(t.createdAt),
-  byManufacturer: index('fixture_types_manufacturer_idx').on(t.manufacturer),
-  byGdtfHash:     index('fixture_types_gdtf_hash_idx').on(t.sourceGdtfHash),
+  byCreatedAt:       index('fixture_types_created_at_idx').on(t.createdAt),
+  byManufacturer:    index('fixture_types_manufacturer_idx').on(t.manufacturer),
+  byGdtfHash:        index('fixture_types_gdtf_hash_idx').on(t.sourceGdtfHash),
+  byGdtfShareUuid:   index('fixture_types_gdtf_share_uuid_idx').on(t.gdtfShareUuid),
 }));
 
 export const fixtureMedia = pgTable('fixture_media', {
@@ -498,6 +502,27 @@ export const fixtureMedia = pgTable('fixture_media', {
 }, (t) => ({
   byHash:         index('fixture_media_hash_idx').on(t.contentHash),
   byFixtureType:  index('fixture_media_fixture_type_idx').on(t.fixtureTypeId),
+}));
+
+export const fixtureVersions = pgTable('fixture_versions', {
+  id:                  uuid('id').primaryKey().defaultRandom(),
+  fixtureTypeId:       uuid('fixture_type_id').notNull().references(() => fixtureTypes.id, { onDelete: 'cascade' }),
+  gdtfShareRid:        integer('gdtf_share_rid'),
+  gdtfShareUuid:       varchar('gdtf_share_uuid', { length: 128 }),
+  gdtfVersion:         varchar('gdtf_version', { length: 64 }),
+  revision:            varchar('revision', { length: 128 }),
+  gdtfHash:            varchar('gdtf_hash', { length: 64 }).notNull(),
+  definition:          jsonb('definition').notNull().default(sql`'{}'::jsonb`),
+  originalMediaId:     uuid('original_media_id').references(() => fixtureMedia.id, { onDelete: 'set null' }),
+  previewModelId:      uuid('preview_model_id'),
+  downloadedAt:        timestamp('downloaded_at', { withTimezone: true }).notNull().defaultNow(),
+  downloadedByAdminId:   uuid('downloaded_by_admin_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+  downloadedByApiKeyId:  uuid('downloaded_by_api_key_id').references(() => apiKeys.id, { onDelete: 'set null' }),
+  createdAt:           timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byFixtureType: index('fixture_versions_fixture_type_idx').on(t.fixtureTypeId),
+  byDownloadedAt: index('fixture_versions_downloaded_at_idx').on(t.downloadedAt),
+  uniqueTypeHash: uniqueIndex('fixture_versions_type_hash_uidx').on(t.fixtureTypeId, t.gdtfHash),
 }));
 
 export const gdtfCache = pgTable('gdtf_cache', {
@@ -579,6 +604,8 @@ export type FixtureType        = typeof fixtureTypes.$inferSelect;
 export type NewFixtureType     = typeof fixtureTypes.$inferInsert;
 export type FixtureMedia       = typeof fixtureMedia.$inferSelect;
 export type NewFixtureMedia      = typeof fixtureMedia.$inferInsert;
+export type FixtureVersionRow    = typeof fixtureVersions.$inferSelect;
+export type NewFixtureVersionRow = typeof fixtureVersions.$inferInsert;
 export type GdtfCache          = typeof gdtfCache.$inferSelect;
 export type NewGdtfCache       = typeof gdtfCache.$inferInsert;
 export type FixtureInstanceRow    = typeof fixtureInstances.$inferSelect;

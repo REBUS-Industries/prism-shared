@@ -156,6 +156,36 @@ export interface FixtureDefinition {
   metadata: Record<string, unknown>;
 }
 
+export type FixtureImportSource = 'upload' | 'gdtf-share' | 'mvr-embedded';
+
+export interface FixtureVersionSummary {
+  id: string;
+  fixtureTypeId: string;
+  gdtfShareRid: number | null;
+  gdtfShareUuid: string | null;
+  gdtfVersion: string | null;
+  revision: string | null;
+  gdtfHash: string;
+  originalMediaId: string | null;
+  previewModelId: string | null;
+  downloadedAt: string;
+  isActive: boolean;
+}
+
+export interface FixtureUpdateCheck {
+  updateAvailable: boolean;
+  activeRid: number | null;
+  latestRid: number | null;
+  latestRevision: string | null;
+  latestVersion: string | null;
+  latestLastModified: string | null;
+}
+
+export interface FixtureEditCarryReport {
+  applied: string[];
+  unmapped: string[];
+}
+
 export interface FixtureTypeSummary {
   id: string;
   name: string;
@@ -164,8 +194,12 @@ export interface FixtureTypeSummary {
   revision: string | null;
   tags: string[];
   sourceGdtfHash: string | null;
+  gdtfShareUuid: string | null;
+  importSource: FixtureImportSource;
+  activeVersionId: string | null;
   status: string;
   hasPreview: boolean;
+  updateAvailable?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -174,6 +208,7 @@ export interface FixtureTypeDetail extends FixtureTypeSummary {
   definition: FixtureDefinition;
   previewModelId: string | null;
   sourceGdtfId: string | null;
+  activeVersion?: FixtureVersionSummary | null;
 }
 
 export interface FixtureInstance {
