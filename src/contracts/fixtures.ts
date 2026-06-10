@@ -295,3 +295,51 @@ export function tagsWithFixtureCategory(tags: string[], category: LibraryFixture
   if (category === 'Unassigned') return rest;
   return [category, ...rest];
 }
+
+// ---------------------------------------------------------------------------
+// User-managed fixture category config (admin Settings → Fixture Types)
+// ---------------------------------------------------------------------------
+//
+// The 7 constants above remain the *seed defaults*. They are written into the
+// `fixture_categories` table on first run (migration 0014) and from then on the
+// set is editable in the admin UI: operators can add/rename/recolour/reorder
+// categories and delete the ones they don't use. The library still stores the
+// chosen category as the first non-part tag (`tags[0]`) via
+// `tagsWithFixtureCategory()`, so this config is purely the source of the
+// label + colour palette — nothing about the tag-storage contract changes.
+
+/** A persisted fixture-category definition (one row of `fixture_categories`). */
+export interface FixtureCategoryConfig {
+  id: string;
+  /** Stable slug — never the tag value; used for default-row protection. */
+  key: string;
+  /** Display name AND the value stored in a fixture's `tags[0]`. */
+  label: string;
+  /** CSS hex colour, e.g. `#ef4444`. */
+  color: string;
+  /** Ascending display order. */
+  order: number;
+  /** Seed/system rows (currently just `Unassigned`) can't be deleted/renamed. */
+  isDefault: boolean;
+}
+
+/** Seed row shape used by migration 0014 + the service's lazy re-seed. */
+export interface FixtureCategorySeed {
+  key: string;
+  label: LibraryFixtureCategory;
+  color: string;
+  isDefault: boolean;
+}
+
+/**
+ * The default category set, seeded on first run. Derived from the legacy
+ * constants so the two never drift. `Unassigned` is the protected fallback
+ * (it is the *absence* of a category tag, never written into `tags`).
+ */
+export const DEFAULT_FIXTURE_CATEGORIES: FixtureCategorySeed[] =
+  LIBRARY_FIXTURE_CATEGORIES.map((label) => ({
+    key: label.toLowerCase(),
+    label,
+    color: FIXTURE_CATEGORY_COLORS[label],
+    isDefault: label === 'Unassigned',
+  }));

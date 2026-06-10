@@ -559,6 +559,25 @@ export const fixtureInstances = pgTable('fixture_instances', {
   byType:    index('fixture_instances_type_idx').on(t.fixtureTypeId),
 }));
 
+// User-managed fixture category palette (admin Settings → Fixture Types).
+// Seeded with the 7 defaults on first run (migration 0014). `label` is both
+// the display name and the value stored in a library fixture's `tags[0]`
+// (see contracts/fixtures.ts tagsWithFixtureCategory); `key` is a stable slug
+// used only to protect the `Unassigned` fallback row from delete/rename.
+export const fixtureCategories = pgTable('fixture_categories', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  key:       varchar('key', { length: 64 }).notNull(),
+  label:     varchar('label', { length: 64 }).notNull(),
+  color:     varchar('color', { length: 16 }).notNull().default('#4b5563'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isDefault: boolean('is_default').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byKey:   uniqueIndex('fixture_categories_key_uidx').on(t.key),
+  byOrder: index('fixture_categories_order_idx').on(t.sortOrder),
+}));
+
 // ---------------------------------------------------------------------------
 // Webhook endpoints — admin-configured callback targets
 // ---------------------------------------------------------------------------
@@ -610,3 +629,5 @@ export type GdtfCache          = typeof gdtfCache.$inferSelect;
 export type NewGdtfCache       = typeof gdtfCache.$inferInsert;
 export type FixtureInstanceRow    = typeof fixtureInstances.$inferSelect;
 export type NewFixtureInstanceRow = typeof fixtureInstances.$inferInsert;
+export type FixtureCategoryRow    = typeof fixtureCategories.$inferSelect;
+export type NewFixtureCategoryRow = typeof fixtureCategories.$inferInsert;
