@@ -5,6 +5,44 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./auth": {
+      "types": "./dist/auth/index.d.ts",
+      "default": "./dist/auth/index.js"
+    },
+    "./db": {
+      "types": "./dist/db/index.d.ts",
+      "default": "./dist/db/index.js"
+    },
+    "./bootstrap": {
+      "types": "./dist/bootstrap.d.ts",
+      "default": "./dist/bootstrap.js"
+    },
+    "./ws": {
+      "types": "./dist/ws/index.d.ts",
+      "default": "./dist/ws/index.js"
+    },
+    "./jobs": {
+      "types": "./dist/jobs/index.d.ts",
+      "default": "./dist/jobs/index.js"
+    },
+    "./orbit": {
+      "types": "./dist/orbit/index.d.ts",
+      "default": "./dist/orbit/index.js"
+    },
+    "./visualiser": {
+      "types": "./dist/visualiser/index.d.ts",
+      "default": "./dist/visualiser/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts/index.d.ts",
+      "default": "./dist/contracts/index.js"
+    }
+  },
   "files": [
     "dist",
     "src/db/migrations"
