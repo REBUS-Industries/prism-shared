@@ -160,6 +160,53 @@ export interface FixtureDefinition {
 
 export type FixtureImportSource = 'upload' | 'gdtf-share' | 'mvr-embedded';
 
+/**
+ * Where a PRISM-library fixture record came from — the library-level
+ * provenance class that distinguishes the two fixture libraries.
+ *
+ *   gdtf-share — downloaded (imported) from the upstream GDTF-Share catalog;
+ *                keeps a live link to its source (uuid/rid) for update checks.
+ *   upload     — imported from a user-supplied .gdtf file.
+ *   mvr        — extracted from an MVR scene during an MVR import.
+ *   manual     — a blank fixture authored directly in PRISM.
+ *
+ * Unlike `importSource` (an import-pipeline detail that defaults to 'upload'
+ * even for blank rows), `origin` is the authoritative field the PRISM Library
+ * view groups/filters on. The upstream GDTF-Share catalog is NOT stored in
+ * these tables — it is browsed live via the gdtf-share API; every row here is
+ * a PRISM-library record that the connector + ORBIT consume.
+ */
+export const FIXTURE_ORIGINS = ['gdtf-share', 'upload', 'mvr', 'manual'] as const;
+export type FixtureOrigin = (typeof FIXTURE_ORIGINS)[number];
+
+export const FIXTURE_ORIGIN_LABELS: Record<FixtureOrigin, string> = {
+  'gdtf-share': 'GDTF Share',
+  upload: 'Uploaded',
+  mvr: 'MVR',
+  manual: 'Manual',
+};
+
+/**
+ * Map the import-pipeline source (+ whether a parsed GDTF hash is present) to
+ * the library origin. Used by the service when persisting a row and by any
+ * client that only has the legacy `importSource`/`sourceGdtfHash` pair.
+ */
+export function fixtureOriginFromImport(
+  importSource: FixtureImportSource | string | null | undefined,
+  hasGdtfHash: boolean,
+): FixtureOrigin {
+  switch (importSource) {
+    case 'gdtf-share':
+      return 'gdtf-share';
+    case 'mvr-embedded':
+      return 'mvr';
+    case 'upload':
+      return hasGdtfHash ? 'upload' : 'manual';
+    default:
+      return 'manual';
+  }
+}
+
 export interface FixtureVersionSummary {
   id: string;
   fixtureTypeId: string;
@@ -198,6 +245,8 @@ export interface FixtureTypeSummary {
   sourceGdtfHash: string | null;
   gdtfShareUuid: string | null;
   importSource: FixtureImportSource;
+  /** Library-level provenance class (see FixtureOrigin). */
+  origin: FixtureOrigin;
   activeVersionId: string | null;
   status: string;
   hasPreview: boolean;
@@ -211,6 +260,76 @@ export interface FixtureTypeDetail extends FixtureTypeSummary {
   previewModelId: string | null;
   sourceGdtfId: string | null;
   activeVersion?: FixtureVersionSummary | null;
+}
+
+// ---------------------------------------------------------------------------
+// Connector / ORBIT export
+// ---------------------------------------------------------------------------
+//
+// The PRISM Fixture Library (these tables) is the authoritative, editable set
+// that the ORBIT connector and ORBIT consume — distinct from the upstream
+// GDTF-Share catalog, which is read-only reference. These contracts describe
+// the export surface a connector pulls from
+// (`GET /api/fixtures/export[/:id]`). The payload is self-contained: identity,
+// provenance back to the GDTF-Share source, the full parsed definition
+// (parts/models/beams/wheels/DMX/motion), and resolved asset URLs (GLB
+// preview, IES, gobo/colour-wheel/thumbnail images). Asset URLs are the
+// existing authenticated media endpoints on this service.
+
+/** Bump when the export payload shape changes in a non-additive way. */
+export const FIXTURE_EXPORT_FORMAT_VERSION = 1;
+
+export interface FixtureExportAsset {
+  mediaId: string;
+  /** Relative URL on prism-fixtures-service (requires the caller's auth). */
+  url: string;
+  mediaType: MediaType | string;
+  label: string;
+  contentType?: string;
+}
+
+/** Compact row for the connector's "what can I pull" index. */
+export interface FixtureExportSummary {
+  id: string;
+  name: string;
+  manufacturer: string;
+  fixtureName: string;
+  revision: string | null;
+  category: string;
+  origin: FixtureOrigin;
+  status: string;
+  hasPreview: boolean;
+  gdtfShareUuid: string | null;
+  activeVersionId: string | null;
+  updatedAt: string;
+}
+
+/** Full connector/ORBIT export payload for a single PRISM-library fixture. */
+export interface FixtureConnectorExport {
+  exportFormatVersion: number;
+  exportedAt: string;
+  id: string;
+  name: string;
+  manufacturer: string;
+  fixtureName: string;
+  revision: string | null;
+  category: string;
+  origin: FixtureOrigin;
+  status: string;
+  provenance: {
+    gdtfShareUuid: string | null;
+    gdtfShareRid: number | null;
+    gdtfVersion: string | null;
+    revision: string | null;
+    sourceGdtfHash: string | null;
+  };
+  definition: FixtureDefinition;
+  activeVersion: FixtureVersionSummary | null;
+  assets: {
+    previewModel: FixtureExportAsset | null;
+    ies: FixtureExportAsset[];
+    images: FixtureExportAsset[];
+  };
 }
 
 export interface FixtureInstance {

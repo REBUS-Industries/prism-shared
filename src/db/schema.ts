@@ -473,6 +473,10 @@ export const fixtureTypes = pgTable('fixture_types', {
   gdtfShareUuid:    varchar('gdtf_share_uuid', { length: 128 }),
   activeVersionId:  uuid('active_version_id'),
   importSource:     varchar('import_source', { length: 64 }).notNull().default('upload'),
+  // Library-level provenance class (see contracts FixtureOrigin):
+  // 'gdtf-share' | 'upload' | 'mvr' | 'manual'. Distinguishes downloaded
+  // catalog fixtures from uploads/MVR/blank records in the PRISM Library view.
+  origin:           varchar('origin', { length: 32 }).notNull().default('manual'),
   definition:       jsonb('definition').notNull().default(sql`'{}'::jsonb`),
   previewModelId:   uuid('preview_model_id'),
   createdByAdminId:   uuid('created_by_admin_id').references(() => adminUsers.id, { onDelete: 'set null' }),
@@ -485,6 +489,7 @@ export const fixtureTypes = pgTable('fixture_types', {
   byManufacturer:    index('fixture_types_manufacturer_idx').on(t.manufacturer),
   byGdtfHash:        index('fixture_types_gdtf_hash_idx').on(t.sourceGdtfHash),
   byGdtfShareUuid:   index('fixture_types_gdtf_share_uuid_idx').on(t.gdtfShareUuid),
+  byOrigin:          index('fixture_types_origin_idx').on(t.origin),
 }));
 
 export const fixtureMedia = pgTable('fixture_media', {
